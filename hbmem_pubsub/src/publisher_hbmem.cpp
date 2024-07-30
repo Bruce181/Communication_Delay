@@ -2,67 +2,92 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include <vector>
+#include <algorithm>
 
 #include "rclcpp/rclcpp.hpp"
-#include "hbmem_pubsub/msg/sample_message.hpp"
+#include "hbmem_pubsub/msg/sample_message1_m.hpp"
+#include "hbmem_pubsub/msg/sample_message2_m.hpp"
+#include "hbmem_pubsub/msg/sample_message5_m.hpp"
+#include "hbmem_pubsub/msg/sample_message10_m.hpp"
+#include "hbmem_pubsub/msg/sample_message20_m.hpp"
 
 using namespace std::chrono_literals;
 
-class MultiTopicHbmemPublisher : public rclcpp::Node {
+class MinimalHbmemPublisher : public rclcpp::Node {
 public:
-  MultiTopicHbmemPublisher() : Node("multi_topic_hbmem_publisher"), count_(1), set_count_(0) {
-    std::vector<size_t> data_sizes = {1, 2, 5, 10, 20};
-    for (size_t i = 0; i < data_sizes.size(); ++i) {
-      std::string topic_name = "topic_" + std::to_string(data_sizes[i]) + "M";
-      size_t data_size = data_sizes[i] * 1024 * 1024;
+  MinimalHbmemPublisher() : Node("minimal_hbmem_publisher"), count_(1) {
+    // 创建publisher_hbmem，topic为"topic"
+    publisher_1m_ = this->create_publisher<hbmem_pubsub::msg::SampleMessage1M>("topic_1m", rclcpp::SensorDataQoS());
+    publisher_2m_ = this->create_publisher<hbmem_pubsub::msg::SampleMessage2M>("topic_2m", rclcpp::SensorDataQoS());
+    publisher_5m_ = this->create_publisher<hbmem_pubsub::msg::SampleMessage5M>("topic_5m", rclcpp::SensorDataQoS());
+    publisher_10m_ = this->create_publisher<hbmem_pubsub::msg::SampleMessage10M>("topic_10m", rclcpp::SensorDataQoS());
+    publisher_20m_ = this->create_publisher<hbmem_pubsub::msg::SampleMessage20M>("topic_20m", rclcpp::SensorDataQoS());
 
-      // 使用 KeepLast(10) 的 QoS 设置
-      auto qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable().durability_volatile();
-
-      // 创建发布者
-      auto publisher = this->create_publisher<hbmem_pubsub::msg::SampleMessage>(topic_name, qos);
-      publishers_.push_back(publisher);
-
-      // 创建定时器
-      auto timer = this->create_wall_timer(
-        500ms, [this, publisher, data_size]() { this->timer_callback(publisher, data_size); });
-      timers_.push_back(timer);
-    }
+    // 定时器，每隔500毫秒调用一次timer_callback进行消息发送
+    timer_ = this->create_wall_timer(500ms, std::bind(&MinimalHbmemPublisher::timer_callback, this));
   }
 
 private:
-  void timer_callback(rclcpp::Publisher<hbmem_pubsub::msg::SampleMessage>::SharedPtr publisher, size_t data_size) {
-  
-    if ((count_ - 1) % 5 == 0 && (count_ - 1) != 0) {
-        printf("\n\n");  // Print an empty line every 5 messages
-        set_count_++;
-    }  
-  
-    // 创建消息
-    auto message = hbmem_pubsub::msg::SampleMessage();
-    auto now = rclcpp::Clock(RCL_SYSTEM_TIME).now();
-    message.time_stamp = now.nanoseconds();
-    message.index = count_;
-
-    // 填充数据
-    message.data.fill('x');  // Assuming data is an array of fixed size
-
-    // 发布消息
-    publisher->publish(message);
-    RCLCPP_INFO(this->get_logger(), "Published message %zu of size %zu MB", count_, data_size / (1024 * 1024));
-    count_++;
+  // 定时器回调函数
+  void timer_callback() {
+    // 发布不同大小的消息
+    publish_message<hbmem_pubsub::msg::SampleMessage1M>(publisher_1m_, 1048576);  // 1MB
+    publish_message<hbmem_pubsub::msg::SampleMessage2M>(publisher_2m_, 2097152);  // 2MB
+    publish_message<hbmem_pubsub::msg::SampleMessage5M>(publisher_5m_, 5242880);  // 5MB
+    publish_message<hbmem_pubsub::msg::SampleMessage10M>(publisher_10m_, 10485760);  // 10MB
+    publish_message<hbmem_pubsub::msg::SampleMessage20M>(publisher_20m_, 20971520);  // 20MB
   }
 
-  std::vector<rclcpp::TimerBase::SharedPtr> timers_;
-  std::vector<rclcpp::Publisher<hbmem_pubsub::msg::SampleMessage>::SharedPtr> publishers_;
+  template<typename MessageT>
+  void publish_message(const typename rclcpp::Publisher<MessageT>::SharedPtr& publisher, size_t message_size) {
+    // 获取要发送的消息
+    auto loanedMsg = publisher->borrow_loaned_message();
+    // 判断消息是否可用，可能出现获取消息失败导致消息不可用的情况
+    if (loanedMsg.is_valid()) {
+      // 引用方式获取实际的消息
+      auto &msg = loanedMsg.get();
+     
+      // 获取当前时间，单位为us
+      auto time_now = std::chrono::duration_cast<std::chrono::microseconds>(
+          std::chrono::steady_clock::now().time_since_epoch()).count();
+             
+      // 对消息的index和time_stamp进行赋值
+      msg.index = count_;
+      msg.time_stamp = time_now;
+     
+      if ((count_ - 1) % 5 == 0 && (count_ - 1) != 0) {
+          printf("\n\n");  // Print an empty line every 5 messages
+      }
+
+      // 填充数据
+      std::fill(msg.data.begin(), msg.data.end(), 'x');
+      // 打印发送消息
+      RCLCPP_INFO(this->get_logger(), "Sending message: %zu with size: %zuMB", count_, (message_size / 1048576));
+      publisher->publish(std::move(loanedMsg));
+      count_++;
+    } else {
+      RCLCPP_WARN(this->get_logger(), "Failed to get LoanMessage!");
+    }
+  }
+  // 定时器
+  rclcpp::TimerBase::SharedPtr timer_;
+  // hbmem publisher
+  rclcpp::Publisher<hbmem_pubsub::msg::SampleMessage1M>::SharedPtr publisher_1m_;
+  rclcpp::Publisher<hbmem_pubsub::msg::SampleMessage2M>::SharedPtr publisher_2m_;
+  rclcpp::Publisher<hbmem_pubsub::msg::SampleMessage5M>::SharedPtr publisher_5m_;
+  rclcpp::Publisher<hbmem_pubsub::msg::SampleMessage10M>::SharedPtr publisher_10m_;
+  rclcpp::Publisher<hbmem_pubsub::msg::SampleMessage20M>::SharedPtr publisher_20m_;
+  // 计数器
   size_t count_;
-  size_t set_count_;
 };
 
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<MultiTopicHbmemPublisher>());
+  rclcpp::spin(std::make_shared<MinimalHbmemPublisher>());
   rclcpp::shutdown();
   return 0;
 }
+
+
+
+

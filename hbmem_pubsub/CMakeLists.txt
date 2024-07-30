@@ -23,7 +23,11 @@ find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/SampleMessage.msg"
+  "msg/SampleMessage1M.msg"
+  "msg/SampleMessage2M.msg"
+  "msg/SampleMessage5M.msg"
+  "msg/SampleMessage10M.msg"
+  "msg/SampleMessage20M.msg"
 )
 
 find_package(rclcpp REQUIRED)
