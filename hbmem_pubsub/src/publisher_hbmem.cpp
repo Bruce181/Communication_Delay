@@ -44,23 +44,25 @@ private:
     auto loanedMsg = publisher->borrow_loaned_message();
     // 判断消息是否可用，可能出现获取消息失败导致消息不可用的情况
     if (loanedMsg.is_valid()) {
+      
       // 引用方式获取实际的消息
-      auto &msg = loanedMsg.get();
-     
-      // 获取当前时间，单位为us
-      auto time_now = std::chrono::duration_cast<std::chrono::microseconds>(
-          std::chrono::steady_clock::now().time_since_epoch()).count();
-             
-      // 对消息的index和time_stamp进行赋值
-      msg.index = count_;
-      msg.time_stamp = time_now;
+      auto& msg = loanedMsg.get();
+      
+      // 填充数据
+      std::fill(msg.data.begin(), msg.data.end(), 'x');
      
       if ((count_ - 1) % 5 == 0 && (count_ - 1) != 0) {
           printf("\n\n");  // Print an empty line every 5 messages
       }
+      
+      // 获取当前时间，单位为us
+      auto time_now = std::chrono::duration_cast<std::chrono::microseconds>(
+          std::chrono::steady_clock::now().time_since_epoch()).count();
+      
+      // 对消息的index和time_stamp进行赋值
+      msg.index = count_;
+      msg.time_stamp = time_now;      
 
-      // 填充数据
-      std::fill(msg.data.begin(), msg.data.end(), 'x');
       // 打印发送消息
       RCLCPP_INFO(this->get_logger(), "Sending message: %zu with size: %zuMB", count_, (message_size / 1048576));
       publisher->publish(std::move(loanedMsg));

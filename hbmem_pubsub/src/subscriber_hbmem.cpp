@@ -36,13 +36,14 @@ private:
   template<typename MessageT>
   void topic_callback(const typename MessageT::SharedPtr msg) const{
     // 获取当前时间
-    auto time_now = std::chrono::duration_cast<std::chrono::microseconds>(
-        std::chrono::steady_clock::now().time_since_epoch()).count();
-    auto latency = time_now - msg->time_stamp;
-
+    
     if ((msg->index - 1) % 5 == 0) {
       printf("\n\n");  // 每5条消息打印一个空行
     }
+
+    auto time_now = std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+    auto latency = time_now - msg->time_stamp;
 
     RCLCPP_INFO(this->get_logger(), "Received message: %u with latency: %ld us", msg->index, latency);
   }
