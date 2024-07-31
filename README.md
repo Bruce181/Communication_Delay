@@ -243,28 +243,23 @@ The KeepLast(n) policy reduces memory usage by limiting the number of messages i
 Compared by any other mode, the condition of "zero copy" from origin is best. No missing package and no unordered seqence. Moreover, even the transmission delay of it is fairly small. The average of them is only at about 2 ms no matter the size of package.
 
 ```
-[INFO] [1721791827.619290474] [multi_topic_hbmem_subscriber]: Message 1 Delay in topic_1M: 2.226 ms
-[INFO] [1721791827.628787143] [multi_topic_hbmem_subscriber]: Message 2 Delay in topic_2M: 2.188 ms
-[INFO] [1721791827.638581911] [multi_topic_hbmem_subscriber]: Message 3 Delay in topic_5M: 2.188 ms
-[INFO] [1721791827.647998744] [multi_topic_hbmem_subscriber]: Message 4 Delay in topic_10M: 2.352 ms
-[INFO] [1721791827.657314266] [multi_topic_hbmem_subscriber]: Message 5 Delay in topic_20M: 2.126 ms
+[INFO] [1722394989.416885433] [minimal_hbmem_subscriber]: Received message: 1 with latency: 404 us
+[INFO] [1722394989.421424644] [minimal_hbmem_subscriber]: Received message: 2 with latency: 189 us
+[INFO] [1722394989.432823767] [minimal_hbmem_subscriber]: Received message: 3 with latency: 181 us
+[INFO] [1722394989.456002452] [minimal_hbmem_subscriber]: Received message: 4 with latency: 218 us
+[INFO] [1722394989.502279980] [minimal_hbmem_subscriber]: Received message: 5 with latency: 258 us
 ```
 
-As the code gradually stable, the effect of "zero copy" is stronger. In such case, the size of message isn't the hinder for transmission speed any more. Therefore, the time delay is able to be shorten to above 0.5ms, which is impossible for any other mode used before.
+As the code gradually stable, the effect of "zero copy" is stronger. In such case, the size of message isn't the hinder for transmission speed any more. Therefore, the time delay is able to be shorten to below 200us, which is impossible for any other mode used before.
 ```
-[INFO] [1721791894.774972780] [multi_topic_hbmem_subscriber]: Message 156 Delay in topic_1M: 0.686 ms
-[INFO] [1721791894.783624739] [multi_topic_hbmem_subscriber]: Message 157 Delay in topic_2M: 0.449 ms
-[INFO] [1721791894.793177474] [multi_topic_hbmem_subscriber]: Message 158 Delay in topic_5M: 0.487 ms
-[INFO] [1721791894.802381536] [multi_topic_hbmem_subscriber]: Message 159 Delay in topic_10M: 0.698 ms
-[INFO] [1721791894.811270915] [multi_topic_hbmem_subscriber]: Message 160 Delay in topic_20M: 0.550 ms
+[INFO] [1722395233.542201475] [minimal_hbmem_subscriber]: Received message: 861 with latency: 176 us
+[INFO] [1722395233.546193315] [minimal_hbmem_subscriber]: Received message: 862 with latency: 156 us
+[INFO] [1722395233.555654907] [minimal_hbmem_subscriber]: Received message: 863 with latency: 150 us
+[INFO] [1722395233.574615372] [minimal_hbmem_subscriber]: Received message: 864 with latency: 154 us
+[INFO] [1722395233.612942194] [minimal_hbmem_subscriber]: Received message: 865 with latency: 198 us
 ```
 
 ### Improving Method
-
-Zero Copy is an I/O operation optimization technique that quickly and efficiently moves data from a file system to a network interface without having to copy it from kernel space to user space.
-
-In traditional I/O operations, data is often copied multiple times between kernel space and user space. For example, when data is read from a hard disk and sent over the network, the data may be copied four times: Read data from the hard disk to the kernel buffer. Copy from kernel buffer to user space buffer. Copy from user space buffer to kernel network buffer. Sent from the kernel network buffer to the network.
-
 Zero copy technology reduces or eliminates these copying operations by:
 - ** 'RMW_IMPLEMENTATION=rmw_fastrtps_cpp' ** : Ensure that the implementation is implemented using middleware that supports zero-copy transfer.
 - ** 'FASTRTPS_DEFAULT_PROFILES_FILE' ** : Enable shared memory transporters through configuration files.
