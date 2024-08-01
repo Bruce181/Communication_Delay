@@ -273,9 +273,9 @@ export RMW_FASTRTPS_USE_QOS_FROM_XML=1
 export ROS_DISABLE_LOANED_MESSAGES=0
 ```
 
+---
 In ROS 2, the middleware is the infrastructure used to handle interprocess communication. ROS 2 interacts with different Middleware implementations through an abstraction layer called RMW (ROS Middleware) interface. Some of these common middleware implementation in ROS 2 are:
 
----
 - **Fast DDS (Fast RTPS):** In ROS 2, the default Middleware implementation is ==Fast DDS (Fast RTPS)==, developed by eProsima, and uses `rmw_fastrtps_cpp`. The reasons for choosing ==Fast DDS== as the default implementation include its high performance, high throughput, and low latency message transfer capabilities, which are suitable for most application scenarios. ==Fast DDS== supports a wide range of Quality of Service (QoS) policies, allowing developers to adjust communication behavior according to application requirements. In addition, ==Fast DDS== supports zero copy and shared memory transfers, which is especially suitable for efficient communication between processes on the same machine.
 
 - **Cyclone DDS:** ==Cyclone DDS== is an implementation of DDS developed by the Eclipse Foundation that focuses on real-time performance and is suitable for resource-constrained devices and embedded systems. It supports highly reliable distributed communication and is widely used in industrial automation and control systems. ==Cyclone DDS== is compact in design for embedded and small devices and is open source based on the Eclipse Public License. Its implementation is `rmw_cyclonedds_cpp`.
@@ -283,6 +283,7 @@ In ROS 2, the middleware is the infrastructure used to handle interprocess commu
 - **OpenDDS:** ==OpenDDS== is an open source DDS implementation developed by Object Computing, Inc. (OCI) that supports real-time data distribution for applications requiring high throughput and low latency. OpenDDS offers a high degree of configurability and supports customized requirements. The implementation is open source based on ACE and TAO frameworks and uses the GNU Lesser General Public License (LGPL). Its implementation is` rmw_opendds_cpp`.
 
 The middleware implementation isn't only mentioned above, but also has RTI Connext DDs, GurumDDS, eCAL and so on.
+
 ---
 
 XML configuration is used to identify and modify various parameters in data communication in the middleware implementation of Fast RTPS. Users can precisely control the behavior of DDS middleware to meet specific application requirements. Here are the main meanings and effects of XML configuration:
